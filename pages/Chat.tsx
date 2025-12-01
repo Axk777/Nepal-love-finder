@@ -266,7 +266,10 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
             const showAvatar = !isMe && (!prevMsg || prevMsg.fromUserId !== msg.fromUserId);
             
             // Check if message is a Game Prompt
-            const isGame = msg.text.startsWith("🎮") || msg.text.startsWith("🔥") || msg.text.startsWith("🤔");
+            const isTruth = msg.text.startsWith("🎮");
+            const isDare = msg.text.startsWith("🔥");
+            const isRather = msg.text.startsWith("🤔");
+            const isGame = isTruth || isDare || isRather;
 
             if (isSystem) {
                 return (
@@ -279,12 +282,28 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
             }
 
             if (isGame) {
+                let cardStyle = "bg-white border-2 border-gray-200";
+                let textStyle = "text-gray-800";
+                if (isTruth) {
+                    cardStyle = "bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-purple-500/30";
+                    textStyle = "text-white";
+                } else if (isDare) {
+                    cardStyle = "bg-gradient-to-br from-red-500 to-pink-600 text-white shadow-red-500/30";
+                    textStyle = "text-white";
+                } else if (isRather) {
+                    cardStyle = "bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-blue-500/30";
+                    textStyle = "text-white";
+                }
+
                 return (
-                    <div key={msg.id} className="flex justify-center my-4">
-                        <div className="bg-white border-2 border-dashed border-nepaliBlue/40 rounded-xl p-4 max-w-[85%] shadow-sm text-center">
-                            <p className="text-sm font-bold text-gray-800 leading-relaxed">{msg.text}</p>
-                            <span className="text-[10px] text-gray-400 mt-2 block uppercase tracking-wide">
-                                Sent by {isMe ? 'You' : matchData.partner.displayName}
+                    <div key={msg.id} className="flex justify-center my-4 animate-pop-in">
+                        <div className={`${cardStyle} rounded-2xl p-5 max-w-[85%] shadow-lg text-center relative overflow-hidden`}>
+                            {/* Decorative background circle */}
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-xl -mr-8 -mt-8"></div>
+                            
+                            <p className={`text-sm font-bold ${textStyle} leading-relaxed relative z-10`}>{msg.text}</p>
+                            <span className={`text-[10px] ${isMe ? 'text-white/70' : 'text-white/70'} mt-3 block uppercase tracking-wide font-medium`}>
+                                {isMe ? 'You asked' : `${matchData.partner.displayName} asks`}
                             </span>
                         </div>
                     </div>
@@ -327,14 +346,18 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
         {/* Game Menu Popup */}
         {showGameMenu && (
             <div className="absolute bottom-full mb-2 left-2 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 flex flex-col gap-1 w-48 animate-fade-in-up z-20">
-                <button onClick={() => handleSendGame('TRUTH')} className="flex items-center gap-2 p-2 hover:bg-purple-50 rounded-lg text-sm font-bold text-gray-700 hover:text-purple-600 text-left">
-                    <span className="text-lg">🎮</span> Truth
+                <div className="text-xs font-bold text-gray-400 uppercase px-2 py-1">Play a Game</div>
+                <button onClick={() => handleSendGame('TRUTH')} className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg text-sm font-bold text-gray-700 hover:text-purple-600 text-left transition-colors">
+                    <span className="text-lg bg-purple-100 p-1 rounded-md">🎮</span> 
+                    <span>Truth</span>
                 </button>
-                <button onClick={() => handleSendGame('DARE')} className="flex items-center gap-2 p-2 hover:bg-red-50 rounded-lg text-sm font-bold text-gray-700 hover:text-red-600 text-left">
-                    <span className="text-lg">🔥</span> Dare
+                <button onClick={() => handleSendGame('DARE')} className="flex items-center gap-3 p-2 hover:bg-red-50 rounded-lg text-sm font-bold text-gray-700 hover:text-red-600 text-left transition-colors">
+                    <span className="text-lg bg-red-100 p-1 rounded-md">🔥</span> 
+                    <span>Dare</span>
                 </button>
-                <button onClick={() => handleSendGame('RATHER')} className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded-lg text-sm font-bold text-gray-700 hover:text-blue-600 text-left">
-                    <span className="text-lg">🤔</span> Would You Rather
+                <button onClick={() => handleSendGame('RATHER')} className="flex items-center gap-3 p-2 hover:bg-blue-50 rounded-lg text-sm font-bold text-gray-700 hover:text-blue-600 text-left transition-colors">
+                    <span className="text-lg bg-blue-100 p-1 rounded-md">🤔</span> 
+                    <span>Would You Rather</span>
                 </button>
             </div>
         )}
@@ -356,7 +379,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
         <div className="px-3 pb-3 pt-1 flex gap-2 items-center">
             <button 
                 onClick={() => setShowGameMenu(!showGameMenu)}
-                className="p-3 bg-gray-100 rounded-full text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-all active:scale-95"
+                className={`p-3 rounded-full transition-all active:scale-95 ${showGameMenu ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500 hover:bg-purple-50 hover:text-purple-500'}`}
             >
                 <Icons.Gamepad className="w-5 h-5" />
             </button>
