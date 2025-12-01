@@ -49,7 +49,15 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
           setMessages(msgs);
 
           subscription = subscribeToMessages(data.match.chatRoomId, (newMsg) => {
-              if (isMounted) {
+              if (!isMounted) return;
+
+              if (newMsg === null) {
+                  // Message was deleted or janitor ran -> Refresh list to sync UI
+                  apiGetMessages(data.match.chatRoomId).then(freshMsgs => {
+                      if (isMounted) setMessages(freshMsgs);
+                  });
+              } else {
+                  // New message inserted
                   setMessages(prev => {
                       if (prev.find(m => m.id === newMsg.id)) return prev;
                       return [...prev, newMsg];
