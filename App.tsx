@@ -92,18 +92,36 @@ const App: React.FC = () => {
   }, [user]);
 
   const handleLogin = async (email: string, pass: string) => {
-    const u = await apiLogin(email, pass);
-    setUser(u);
-    if (u.role === Role.ADMIN) setView(ViewState.ADMIN);
-    else setView(ViewState.DASHBOARD);
-    return u;
+    try {
+        const u = await apiLogin(email, pass);
+        setUser(u);
+        if (u.role === Role.ADMIN) setView(ViewState.ADMIN);
+        else setView(ViewState.DASHBOARD);
+        return u;
+    } catch (e: any) {
+        if (e.message === "SCHEMA_MISMATCH") {
+             setSetupError("SCHEMA_MISMATCH");
+             setView(ViewState.SETUP);
+             throw e; // Re-throw to stop auth component from clearing error
+        }
+        throw e;
+    }
   };
 
   const handleSignup = async (data: any) => {
-    const u = await apiSignup(data);
-    setUser(u);
-    setView(ViewState.DASHBOARD);
-    return u;
+    try {
+        const u = await apiSignup(data);
+        setUser(u);
+        setView(ViewState.DASHBOARD);
+        return u;
+    } catch (e: any) {
+         if (e.message === "SCHEMA_MISMATCH") {
+             setSetupError("SCHEMA_MISMATCH");
+             setView(ViewState.SETUP);
+             throw e;
+        }
+        throw e;
+    }
   };
 
   const handleLogout = async () => {

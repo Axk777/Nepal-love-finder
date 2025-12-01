@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { User, Message, Match } from '../types';
 import { apiGetActiveMatch, apiGetMessages, apiSendMessage, apiEndMatch, apiReportUser, apiBlockUser, subscribeToMessages } from '../services/mockBackend';
 import { Icons, Badge } from '../components/UI';
-import { ICEBREAKERS } from '../constants';
+import { ICEBREAKERS, QUICK_REPLIES, GAME_TRUTH, GAME_DARE, GAME_RATHER } from '../constants';
 
 interface ChatProps {
   currentUser: User;
@@ -15,8 +15,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
+  const [showGameMenu, setShowGameMenu] = useState(false); // New State
   const [randomIcebreakers, setRandomIcebreakers] = useState<string[]>([]);
-  const [isExiting, setIsExiting] = useState(false); // New exiting state
+  const [isExiting, setIsExiting] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const matchIdRef = useRef<string | null>(null);
@@ -99,6 +100,18 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
     await apiSendMessage(matchData.match.chatRoomId, currentUser.id, text);
   };
 
+  const handleSendGame = async (type: 'TRUTH' | 'DARE' | 'RATHER') => {
+      if (!matchData) return;
+      setShowGameMenu(false);
+      let list = [];
+      if (type === 'TRUTH') list = GAME_TRUTH;
+      if (type === 'DARE') list = GAME_DARE;
+      if (type === 'RATHER') list = GAME_RATHER;
+      
+      const question = list[Math.floor(Math.random() * list.length)];
+      await apiSendMessage(matchData.match.chatRoomId, currentUser.id, question);
+  };
+
   const handleEndChat = async (e?: React.MouseEvent) => {
     if (e) {
         e.preventDefault();
@@ -107,10 +120,8 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
     
     if(!matchData) return;
     
-    // Close dropdown immediately
     setShowOptions(false);
 
-    // Use a slight timeout to allow UI to update
     setTimeout(async () => {
         if(window.confirm("Are you sure you want to end this chat?")) {
             setIsExiting(true); 
@@ -184,7 +195,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
         </div>
         
         <div className="flex items-center gap-1">
-            {/* Direct Exit Button for Easy Access */}
             <button 
                 onClick={handleEndChat}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors active:scale-95"
@@ -203,9 +213,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
                 
                 {showOptions && (
                     <>
-                    {/* Fixed Backdrop (z-40) */}
                     <div className="fixed inset-0 z-40 bg-black/5" onClick={() => setShowOptions(false)}></div>
-                    {/* Fixed Menu (z-50) - Escapes Header Stacking Context */}
                     <div className="fixed top-16 right-4 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fade-in-up origin-top-right">
                         <button 
                             onClick={handleEndChat} 
@@ -256,6 +264,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
             const isSystem = msg.isSystem;
             const prevMsg = messages[index - 1];
             const showAvatar = !isMe && (!prevMsg || prevMsg.fromUserId !== msg.fromUserId);
+            
+            // Check if message is a Game Prompt
+            const isGame = msg.text.startsWith("🎮") || msg.text.startsWith("🔥") || msg.text.startsWith("🤔");
 
             if (isSystem) {
                 return (
@@ -263,6 +274,19 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
                         <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full tracking-wider shadow-sm">
                             {msg.text}
                         </span>
+                    </div>
+                );
+            }
+
+            if (isGame) {
+                return (
+                    <div key={msg.id} className="flex justify-center my-4">
+                        <div className="bg-white border-2 border-dashed border-nepaliBlue/40 rounded-xl p-4 max-w-[85%] shadow-sm text-center">
+                            <p className="text-sm font-bold text-gray-800 leading-relaxed">{msg.text}</p>
+                            <span className="text-[10px] text-gray-400 mt-2 block uppercase tracking-wide">
+                                Sent by {isMe ? 'You' : matchData.partner.displayName}
+                            </span>
+                        </div>
                     </div>
                 );
             }
@@ -287,7 +311,6 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
                         `}
                     >
                         {msg.text}
-                        {/* Timestamp */}
                         <div className={`absolute bottom-0 -mb-5 text-[10px] text-gray-300 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isMe ? 'right-0' : 'left-0'}`}>
                             {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </div>
@@ -299,22 +322,61 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white px-3 py-3 border-t border-gray-100 flex gap-2 items-center safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10">
-        <input 
-            type="text"
-            className="flex-1 bg-gray-50 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-nepaliRed/10 focus:bg-white border border-transparent focus:border-nepaliRed/20 transition-all text-sm placeholder-gray-400"
-            placeholder="Type a message..."
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
-        />
-        <button 
-            onClick={handleSend}
-            disabled={!inputText.trim()}
-            className="bg-nepaliRed text-white p-3 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-md flex-shrink-0 active:scale-95 transform hover:shadow-lg"
-        >
-            <Icons.Send className="w-5 h-5 ml-0.5" />
-        </button>
+      <div className="bg-white border-t border-gray-100 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10 flex flex-col relative">
+        
+        {/* Game Menu Popup */}
+        {showGameMenu && (
+            <div className="absolute bottom-full mb-2 left-2 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 flex flex-col gap-1 w-48 animate-fade-in-up z-20">
+                <button onClick={() => handleSendGame('TRUTH')} className="flex items-center gap-2 p-2 hover:bg-purple-50 rounded-lg text-sm font-bold text-gray-700 hover:text-purple-600 text-left">
+                    <span className="text-lg">🎮</span> Truth
+                </button>
+                <button onClick={() => handleSendGame('DARE')} className="flex items-center gap-2 p-2 hover:bg-red-50 rounded-lg text-sm font-bold text-gray-700 hover:text-red-600 text-left">
+                    <span className="text-lg">🔥</span> Dare
+                </button>
+                <button onClick={() => handleSendGame('RATHER')} className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded-lg text-sm font-bold text-gray-700 hover:text-blue-600 text-left">
+                    <span className="text-lg">🤔</span> Would You Rather
+                </button>
+            </div>
+        )}
+        {showGameMenu && <div className="fixed inset-0 z-10" onClick={() => setShowGameMenu(false)}></div>}
+
+        {/* Quick Replies Row */}
+        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-hide bg-gray-50/30">
+            {QUICK_REPLIES.map((reply, i) => (
+                <button 
+                    key={i} 
+                    onClick={() => setInputText(reply)}
+                    className="flex-shrink-0 bg-white border border-gray-200 px-3 py-1.5 rounded-full text-xs font-medium text-gray-600 hover:border-nepaliBlue hover:text-nepaliBlue hover:bg-blue-50 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                >
+                    {reply}
+                </button>
+            ))}
+        </div>
+        
+        <div className="px-3 pb-3 pt-1 flex gap-2 items-center">
+            <button 
+                onClick={() => setShowGameMenu(!showGameMenu)}
+                className="p-3 bg-gray-100 rounded-full text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-all active:scale-95"
+            >
+                <Icons.Gamepad className="w-5 h-5" />
+            </button>
+
+            <input 
+                type="text"
+                className="flex-1 bg-gray-50 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-nepaliRed/10 focus:bg-white border border-transparent focus:border-nepaliRed/20 transition-all text-sm placeholder-gray-400"
+                placeholder="Type a message..."
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSend()}
+            />
+            <button 
+                onClick={handleSend}
+                disabled={!inputText.trim()}
+                className="bg-nepaliRed text-white p-3 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:bg-gray-200 disabled:text-gray-400 transition-all shadow-md flex-shrink-0 active:scale-95 transform hover:shadow-lg"
+            >
+                <Icons.Send className="w-5 h-5 ml-0.5" />
+            </button>
+        </div>
       </div>
     </div>
   );

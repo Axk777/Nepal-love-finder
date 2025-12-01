@@ -22,6 +22,7 @@ export const Setup: React.FC<SetupProps> = ({ errorType, onSkip }) => {
   };
 
   const isConnectionError = errorType === 'CONNECTION_ERROR';
+  const isSchemaError = errorType === 'SCHEMA_MISMATCH';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -31,11 +32,13 @@ export const Setup: React.FC<SetupProps> = ({ errorType, onSkip }) => {
             <Icons.Alert className="w-10 h-10 text-nepaliRed" />
           </div>
           <h1 className="text-2xl font-bold text-gray-800">
-             {isConnectionError ? "Connection Failed" : "Database Setup Required"}
+             {isConnectionError ? "Connection Failed" : isSchemaError ? "Database Update Required" : "Database Setup Required"}
           </h1>
           <p className="text-gray-600 mt-2">
             {isConnectionError 
               ? "Could not connect to the Supabase database." 
+              : isSchemaError
+              ? "Your database exists but is missing the new 'Interests' column."
               : "The database is connected, but the required tables are missing."}
           </p>
         </div>

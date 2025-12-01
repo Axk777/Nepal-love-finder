@@ -59,7 +59,64 @@ export const ICEBREAKERS = [
   "What is the one thing you can't live without?"
 ];
 
+export const QUICK_REPLIES = [
+    "Namaste 🙏",
+    "K gardai ho?",
+    "Khana khayo?",
+    "Sanchai chau?",
+    "Hajur?",
+    "Ramro cha",
+    "Kei chaina",
+    "Nice to meet you ✨",
+    "Momo khane? 🥟",
+    "Good Morning ☀️",
+    "Good Night 🌙",
+    "Lol 😂",
+    "Tapai ko ghar kata ho?",
+    "Ani k cha?"
+];
+
 export const PROFANITY_LIST = ['badword1', 'badword2', 'hell', 'stupid', 'idiot']; 
+
+export const GAME_TRUTH = [
+    "🎮 TRUTH: What is your biggest fear?",
+    "🎮 TRUTH: Have you ever had a crush on a teacher?",
+    "🎮 TRUTH: What is the most embarrassing thing you've done at school?",
+    "🎮 TRUTH: Have you ever lied to your parents about where you were?",
+    "🎮 TRUTH: Who was your first crush?",
+    "🎮 TRUTH: What is a secret you’ve never told anyone?",
+    "🎮 TRUTH: If you could change one thing about yourself, what would it be?",
+    "🎮 TRUTH: What is the grossest food you’ve ever eaten?",
+    "🎮 TRUTH: Have you ever cheated on a test?",
+    "🎮 TRUTH: What is your guilty pleasure song?",
+    "🎮 TRUTH: Do you believe in ghosts?",
+    "🎮 TRUTH: What is the most romantic thing you've ever done?",
+    "🎮 TRUTH: When was the last time you cried and why?"
+];
+
+export const GAME_DARE = [
+    "🔥 DARE: Send a selfie making a funny face right now!",
+    "🔥 DARE: Type your name with your nose.",
+    "🔥 DARE: Send the 5th photo in your gallery (no cheating!).",
+    "🔥 DARE: Text your best friend 'I love you' and send me the screenshot.",
+    "🔥 DARE: Speak in rhymes for the next 3 messages.",
+    "🔥 DARE: Describe your dream date using only emojis.",
+    "🔥 DARE: Send a voice note singing your favorite Nepali song (if you can!).",
+    "🔥 DARE: Change your profile bio to 'I love Momo' for 5 minutes.",
+    "🔥 DARE: Tell me a joke. If I don't laugh, you have to answer a Truth."
+];
+
+export const GAME_RATHER = [
+    "🤔 RATHER: Be rich and lonely OR poor and popular?",
+    "🤔 RATHER: Always have to say everything on your mind OR never be able to speak again?",
+    "🤔 RATHER: Live without internet OR live without AC/Fan?",
+    "🤔 RATHER: Have free Momos for life OR free flights for life?",
+    "🤔 RATHER: Know when you die OR know how you die?",
+    "🤔 RATHER: Be invisible OR be able to fly?",
+    "🤔 RATHER: Live in the mountains OR live by the beach?",
+    "🤔 RATHER: Be famous on TikTok OR be the smartest person in the room?",
+    "🤔 RATHER: Forget your past OR forget everyone you know?"
+];
 
 export const SQL_SETUP_SCRIPT = `
 -- Enable UUID extension

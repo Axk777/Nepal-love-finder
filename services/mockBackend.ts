@@ -184,6 +184,9 @@ export const apiSignup = async (data: Partial<User>): Promise<User> => {
         profileError.message.includes('Could not find the table')) {
         throw new Error("DATABASE ERROR: Tables missing. Please run the SQL script in your Supabase Dashboard.");
     }
+    if (profileError.message.includes("Could not find the 'interests' column")) {
+         throw new Error("SCHEMA_MISMATCH");
+    }
     throw profileError;
   }
 
@@ -268,7 +271,12 @@ export const apiUpdateProfile = async (userId: string, updates: Partial<User>): 
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+      if (error.message.includes("Could not find the 'interests' column")) {
+         throw new Error("SCHEMA_MISMATCH");
+      }
+      throw error;
+  }
   return mapUser(data);
 };
 
