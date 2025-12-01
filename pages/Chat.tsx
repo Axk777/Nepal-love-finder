@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { User, Message, Match } from '../types';
 import { apiGetActiveMatch, apiGetMessages, apiSendMessage, apiEndMatch, apiReportUser, apiBlockUser, subscribeToMessages } from '../services/mockBackend';
-import { Icons, Badge } from '../components/UI';
+import { Icons } from '../components/UI';
 import { ICEBREAKERS, QUICK_REPLIES, GAME_TRUTH, GAME_DARE, GAME_RATHER } from '../constants';
 
 interface ChatProps {
@@ -15,7 +15,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [showOptions, setShowOptions] = useState(false);
-  const [showGameMenu, setShowGameMenu] = useState(false); // New State
+  const [showGameMenu, setShowGameMenu] = useState(false);
   const [randomIcebreakers, setRandomIcebreakers] = useState<string[]>([]);
   const [isExiting, setIsExiting] = useState(false);
   
@@ -58,10 +58,11 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
                       if (isMounted) setMessages(freshMsgs);
                   });
               } else {
-                  // New message inserted
+                  // New message inserted - Explicit cast to satisfy TS build
+                  const msg = newMsg as Message;
                   setMessages(prev => {
-                      if (prev.find(m => m.id === newMsg.id)) return prev;
-                      return [...prev, newMsg];
+                      if (prev.find(m => m.id === msg.id)) return prev;
+                      return [...prev, msg];
                   });
               }
           });
@@ -103,7 +104,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
   const handleSendGame = async (type: 'TRUTH' | 'DARE' | 'RATHER') => {
       if (!matchData) return;
       setShowGameMenu(false);
-      let list = [];
+      let list: string[] = [];
       if (type === 'TRUTH') list = GAME_TRUTH;
       if (type === 'DARE') list = GAME_DARE;
       if (type === 'RATHER') list = GAME_RATHER;
@@ -159,7 +160,7 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
 
   if (!matchData || isExiting) {
       return (
-        <div className="flex flex-col items-center justify-center h-screen bg-gray-50 text-gray-500 animate-pulse font-medium gap-3">
+        <div className="flex flex-col items-center justify-center h-[100dvh] bg-gray-50 text-gray-500 animate-pulse font-medium gap-3">
              <div className="w-10 h-10 border-4 border-nepaliRed border-t-transparent rounded-full animate-spin"></div>
              <p>{isExiting ? "Disconnecting..." : "Connecting to chat..."}</p>
         </div>
@@ -167,9 +168,9 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-[100dvh] bg-gray-50">
       {/* Refined Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-20 border-b border-gray-100">
+      <header className="bg-white/80 backdrop-blur-md shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-20 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-3">
              <div className="relative">
                 <img 
@@ -341,11 +342,11 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white border-t border-gray-100 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10 flex flex-col relative">
+      <div className="bg-white border-t border-gray-100 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-10 flex flex-col relative flex-shrink-0">
         
         {/* Game Menu Popup */}
         {showGameMenu && (
-            <div className="absolute bottom-full mb-2 left-2 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 flex flex-col gap-1 w-48 animate-fade-in-up z-20">
+            <div className="absolute bottom-full mb-2 left-2 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 flex flex-col gap-1 w-48 animate-fade-in-up z-50">
                 <div className="text-xs font-bold text-gray-400 uppercase px-2 py-1">Play a Game</div>
                 <button onClick={() => handleSendGame('TRUTH')} className="flex items-center gap-3 p-2 hover:bg-purple-50 rounded-lg text-sm font-bold text-gray-700 hover:text-purple-600 text-left transition-colors">
                     <span className="text-lg bg-purple-100 p-1 rounded-md">🎮</span> 
@@ -361,10 +362,10 @@ export const Chat: React.FC<ChatProps> = ({ currentUser, onExit }) => {
                 </button>
             </div>
         )}
-        {showGameMenu && <div className="fixed inset-0 z-10" onClick={() => setShowGameMenu(false)}></div>}
+        {showGameMenu && <div className="fixed inset-0 z-40" onClick={() => setShowGameMenu(false)}></div>}
 
         {/* Quick Replies Row */}
-        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-hide bg-gray-50/30">
+        <div className="flex gap-2 overflow-x-auto px-4 py-2 scrollbar-hide bg-gray-50/30 min-h-[44px] items-center">
             {QUICK_REPLIES.map((reply, i) => (
                 <button 
                     key={i} 
