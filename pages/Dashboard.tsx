@@ -226,12 +226,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
            <Icons.Heart className="w-7 h-7 fill-nepaliRed text-nepaliRed"/>
            Love Finder
         </h1>
-        <button onClick={onLogout} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all">
-           <Icons.LogOut className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest border border-gray-200 px-2 py-1 rounded bg-gray-50 hidden sm:block">
+                Created by AXK
+            </span>
+            <button onClick={onLogout} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all">
+                <Icons.LogOut className="w-5 h-5" />
+            </button>
+        </div>
       </header>
 
-      <main className="p-4 max-w-lg mx-auto space-y-6 mt-4">
+      {/* Mobile Only Badge */}
+      <div className="sm:hidden text-center -mt-2 mb-2 relative z-20">
+          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest bg-white/80 backdrop-blur px-2 py-0.5 rounded-b-lg border-b border-r border-l border-gray-100 shadow-sm">
+                Created by AXK
+          </span>
+      </div>
+
+      <main className="p-4 max-w-lg mx-auto space-y-6 mt-2">
         
         {/* Profile Glass Card */}
         <GlassCard className="flex flex-col gap-4 bg-gradient-to-br from-nepaliBlue/90 to-blue-600 text-white border-none shadow-xl shadow-blue-500/20 relative overflow-hidden">
@@ -367,9 +379,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
             )}
             
             {!showSharePrompt && !finding && (
-                <p className="text-gray-400 text-xs font-medium uppercase tracking-widest mt-6 animate-fade-in-up">
-                    Looking for {user.role === Role.KTA ? 'Kti' : 'Kta'} • Age {Math.max(13, user.age-2)}-{user.age+2}
-                </p>
+                <div className="animate-fade-in-up mt-6 space-y-2">
+                    <p className="text-gray-500 text-xs font-medium bg-white/50 inline-block px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm">
+                        <span className="text-nepaliRed font-bold">Notice:</span> Only <span className="font-bold text-gray-800">Kta</span> & <span className="font-bold text-gray-800">Kti</span> are matched (Opposite Gender).
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-2">
+                        🇳🇵 Made for Nepali Hearts 🇳🇵
+                    </p>
+                </div>
             )}
         </div>
 
