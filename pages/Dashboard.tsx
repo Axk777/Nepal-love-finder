@@ -23,12 +23,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
   // Celebration State
   const [matchFoundData, setMatchFoundData] = useState<User | null>(null);
   
+  // Love Calculator State
+  const [loveName1, setLoveName1] = useState('');
+  const [loveName2, setLoveName2] = useState('');
+  const [loveScore, setLoveScore] = useState<number | null>(null);
+  
   const isMounted = useRef(true);
   const findingRef = useRef(false);
 
   useEffect(() => {
     isMounted.current = true;
     setDailyHoroscope(HOROSCOPES[Math.floor(Math.random() * HOROSCOPES.length)]);
+    setLoveName1(user.displayName); // Pre-fill user's name
     
     const updateStats = async () => {
         if(isMounted.current) {
@@ -47,7 +53,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
             apiCancelSearch(user.id);
         }
     };
-  }, [user.id]);
+  }, [user.id, user.displayName]);
 
   useEffect(() => {
     const checkActive = async () => {
@@ -146,6 +152,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
     }
   };
 
+  const calculateLove = () => {
+      if (!loveName1 || !loveName2) return;
+      // Simple deterministic hash based on names
+      const combined = (loveName1 + loveName2).toLowerCase().replace(/\s/g, '');
+      let sum = 0;
+      for (let i = 0; i < combined.length; i++) {
+          sum += combined.charCodeAt(i);
+      }
+      setLoveScore(sum % 101); // 0-100
+  };
+
   const handleShare = async () => {
       if (navigator.share) {
           try {
@@ -227,9 +244,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
            Love Finder
         </h1>
         <div className="flex items-center gap-3">
-            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest border border-gray-200 px-2 py-1 rounded bg-gray-50 hidden sm:block">
-                Created by AXK
-            </span>
+            <div className="hidden sm:flex items-center gap-1 bg-gradient-to-r from-gray-50 to-white border border-gray-200 px-3 py-1 rounded-full shadow-sm">
+                <Icons.Sparkle className="w-3 h-3 text-nepaliRed" />
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    Created by AXK
+                </span>
+            </div>
             <button onClick={onLogout} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all">
                 <Icons.LogOut className="w-5 h-5" />
             </button>
@@ -237,17 +257,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
       </header>
 
       {/* Mobile Only Badge */}
-      <div className="sm:hidden text-center -mt-2 mb-2 relative z-20">
-          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest bg-white/80 backdrop-blur px-2 py-0.5 rounded-b-lg border-b border-r border-l border-gray-100 shadow-sm">
-                Created by AXK
-          </span>
+      <div className="sm:hidden flex justify-center -mt-3 mb-2 relative z-20">
+          <div className="flex items-center gap-1 bg-white/90 backdrop-blur border border-gray-100 px-3 py-1 rounded-b-xl shadow-sm">
+                <Icons.Sparkle className="w-3 h-3 text-nepaliRed" />
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                    Created by AXK
+                </span>
+          </div>
       </div>
 
       <main className="p-4 max-w-lg mx-auto space-y-6 mt-2">
         
         {/* Profile Glass Card */}
-        <GlassCard className="flex flex-col gap-4 bg-gradient-to-br from-nepaliBlue/90 to-blue-600 text-white border-none shadow-xl shadow-blue-500/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+        <GlassCard className="flex flex-col gap-4 bg-gradient-to-br from-nepaliBlue/90 to-blue-600 text-white border-none shadow-xl shadow-blue-500/20 relative overflow-hidden transform transition hover:scale-[1.01]">
+          <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse"></div>
           
           <div className="flex items-center gap-4 relative z-10">
             <div className="relative flex-shrink-0">
@@ -256,6 +279,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
                 alt="Profile" 
                 className="w-16 h-16 rounded-full border-4 border-white/30 object-cover shadow-lg" 
                 />
+                <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-ping"></span>
                 <span className="absolute bottom-1 right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></span>
             </div>
             <div className="min-w-0 flex-1">
@@ -380,15 +404,54 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
             
             {!showSharePrompt && !finding && (
                 <div className="animate-fade-in-up mt-6 space-y-2">
-                    <p className="text-gray-500 text-xs font-medium bg-white/50 inline-block px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm">
-                        <span className="text-nepaliRed font-bold">Notice:</span> Only <span className="font-bold text-gray-800">Kta</span> & <span className="font-bold text-gray-800">Kti</span> are matched (Opposite Gender).
+                    <p className="text-gray-500 text-xs font-medium bg-white/50 inline-block px-3 py-2 rounded-xl border border-gray-100 shadow-sm leading-relaxed max-w-[280px] mx-auto">
+                        <span className="text-nepaliRed font-bold block mb-1">Notice</span>
+                        Only <span className="font-bold text-gray-800">Kta</span> & <span className="font-bold text-gray-800">Kti</span> are matched (Opposite Gender) with age difference ±2 years.
                     </p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pt-2">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest pt-2">
                         🇳🇵 Made for Nepali Hearts 🇳🇵
                     </p>
                 </div>
             )}
         </div>
+
+        {/* Love Calculator Card */}
+        <GlassCard className="bg-gradient-to-br from-pink-50 to-white border-pink-100/50">
+            <h3 className="text-center font-bold text-pink-600 mb-4 uppercase tracking-widest text-xs flex items-center justify-center gap-2">
+                <Icons.Heart className="w-4 h-4 fill-pink-600" />
+                Love Calculator
+            </h3>
+            <div className="flex gap-2 items-center mb-4">
+                <input 
+                    className="flex-1 bg-white border border-pink-100 rounded-lg px-3 py-2 text-sm text-center focus:ring-2 focus:ring-pink-200 outline-none"
+                    placeholder="Your Name"
+                    value={loveName1}
+                    onChange={(e) => setLoveName1(e.target.value)}
+                />
+                <span className="text-pink-400 font-bold">+</span>
+                <input 
+                    className="flex-1 bg-white border border-pink-100 rounded-lg px-3 py-2 text-sm text-center focus:ring-2 focus:ring-pink-200 outline-none"
+                    placeholder="Crush Name"
+                    value={loveName2}
+                    onChange={(e) => setLoveName2(e.target.value)}
+                />
+            </div>
+            
+            {loveScore !== null && (
+                <div className="text-center mb-4 animate-pop-in">
+                    <div className="text-4xl font-black text-pink-600">{loveScore}%</div>
+                    <div className="text-xs text-pink-400 font-bold uppercase">Compatibility</div>
+                </div>
+            )}
+
+            <button 
+                onClick={calculateLove}
+                disabled={!loveName1 || !loveName2}
+                className="w-full bg-pink-100 hover:bg-pink-200 text-pink-600 font-bold py-2 rounded-lg text-sm transition-colors"
+            >
+                Calculate Love
+            </button>
+        </GlassCard>
 
         {/* Safety Tips */}
         <div className="bg-green-50/50 p-5 rounded-2xl border border-green-100">

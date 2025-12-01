@@ -303,11 +303,15 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
   const { data: me } = await supabase.from('profiles').select('*').eq('id', currentUserId).single();
   if (!me) throw new Error("Profile not found");
   
+  // STRICT LOGIC: Opposite Gender Only
   const targetRole = me.role === Role.KTA ? Role.KTI : Role.KTA;
+  // STRICT LOGIC: +/- 2 Years
   const minAge = Math.max(MIN_AGE, me.age - MAX_AGE_GAP);
   const maxAge = me.age + MAX_AGE_GAP;
+  
   const staleThreshold = Date.now() - (2 * 60 * 1000); 
   
+  // Find open tickets (active=true, user_b=null)
   const { data: tickets } = await supabase.from('matches')
       .select('id, user_a, created_at')
       .is('user_b', null)
@@ -319,13 +323,24 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
       for (const ticket of tickets) {
           if (ticket.user_a === currentUserId) continue;
 
+          // Fetch details of person waiting
           const { data: waiter } = await supabase.from('profiles').select('*').eq('id', ticket.user_a).single();
           if (!waiter) continue;
 
+          // Don't match with zombies
           if (waiter.last_seen < staleThreshold) continue;
+          
+          // STRICT CHECKS
           if (waiter.role !== targetRole) continue;
           if (waiter.age < minAge || waiter.age > maxAge) continue;
           
+          // Don't match if blocked
+          if ((me.blocked_users || []).includes(waiter.id)) continue;
+          if ((waiter.blocked_users || []).includes(me.id)) continue;
+
+          // Check if already matched recently (Optional, skipping for prototype simplicity)
+
+          // Join the ticket
           const { data: joinedMatch } = await supabase
               .from('matches')
               .update({ user_b: currentUserId })
@@ -341,6 +356,7 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
       }
   }
 
+  // If no match found, create a ticket
   const chatRoomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
   await supabase.from('matches').insert({
       user_a: currentUserId,
