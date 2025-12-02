@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { User, Role } from '../types';
 import { Button, GlassCard, Badge, Icons } from '../components/UI';
-import { apiFindMatch, apiGetActiveMatch, apiGetOnlineCountAsync, apiCancelSearch } from '../services/mockBackend';
-import { SAFETY_TIPS, HOROSCOPES } from '../constants';
+import { apiFindMatch, apiGetActiveMatch, apiGetOnlineCountAsync, apiCancelSearch, apiGetAnnouncement } from '../services/mockBackend';
+import { SAFETY_TIPS, HOROSCOPES, PICKUP_LINES, DATE_IDEAS } from '../constants';
 
 interface DashboardProps {
   user: User;
@@ -19,6 +18,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
   const [error, setError] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
   const [dailyHoroscope, setDailyHoroscope] = useState('');
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   
   // Celebration State
   const [matchFoundData, setMatchFoundData] = useState<User | null>(null);
@@ -27,6 +27,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
   const [loveName1, setLoveName1] = useState('');
   const [loveName2, setLoveName2] = useState('');
   const [loveScore, setLoveScore] = useState<number | null>(null);
+
+  // New Features State
+  const [pickupLine, setPickupLine] = useState('');
+  const [dateIdea, setDateIdea] = useState('');
   
   const isMounted = useRef(true);
   const findingRef = useRef(false);
@@ -40,6 +44,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
         if(isMounted.current) {
             const count = await apiGetOnlineCountAsync();
             setOnlineCount(count);
+            
+            // Check for announcements
+            const ann = await apiGetAnnouncement();
+            if(ann && isMounted.current) {
+                setAnnouncement(ann.text);
+            }
         }
     };
     updateStats();
@@ -82,7 +92,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
     setError('');
     setShowSharePrompt(false);
     
-    const duration = 45; 
+    const duration = 20; // 20 seconds
     setSearchTimeLeft(duration);
     
     const startTime = Date.now();
@@ -161,6 +171,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
           sum += combined.charCodeAt(i);
       }
       setLoveScore(sum % 101); // 0-100
+  };
+
+  const generatePickupLine = () => {
+      const random = PICKUP_LINES[Math.floor(Math.random() * PICKUP_LINES.length)];
+      setPickupLine(random);
+  };
+
+  const generateDateIdea = () => {
+      const random = DATE_IDEAS[Math.floor(Math.random() * DATE_IDEAS.length)];
+      setDateIdea(random);
   };
 
   const handleShare = async () => {
@@ -268,6 +288,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
 
       <main className="p-4 max-w-lg mx-auto space-y-6 mt-2">
         
+        {/* Announcement Banner */}
+        {announcement && (
+            <div className="animate-fade-in-up bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[2px] rounded-2xl shadow-lg">
+                <div className="bg-white rounded-xl p-3 flex items-start gap-3">
+                    <div className="bg-indigo-100 p-2 rounded-full animate-pulse">
+                        <Icons.Megaphone className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                        <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-1">Announcement</h4>
+                        <p className="text-sm font-medium text-gray-800 leading-snug">{announcement}</p>
+                    </div>
+                </div>
+            </div>
+        )}
+
         {/* Profile Glass Card */}
         <GlassCard className="flex flex-col gap-4 bg-gradient-to-br from-nepaliBlue/90 to-blue-600 text-white border-none shadow-xl shadow-blue-500/20 relative overflow-hidden transform transition hover:scale-[1.01]">
           <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse"></div>
@@ -340,10 +375,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <Icons.User className="w-8 h-8 text-blue-500" />
                         </div>
-                        <h3 className="font-bold text-gray-800 text-lg mb-2">Everyone is busy!</h3>
+                        <h3 className="font-bold text-gray-800 text-lg mb-2">Arko pali pakka!</h3>
                         <p className="text-sm text-gray-600 mb-6 px-4 leading-relaxed">
-                            We couldn't find a match right now. <br/>
-                            <span className="font-bold text-blue-600">Invite friends</span> to increase your chances!
+                            Ahile koi vetiyena. <br/>
+                            <span className="font-bold text-blue-600">Sathi lai bolau</span> ra chances badaau!
                         </p>
                         <div className="flex flex-col gap-3">
                           <Button 
@@ -406,13 +441,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
                 <div className="animate-fade-in-up mt-6 space-y-2">
                     <p className="text-gray-500 text-xs font-medium bg-white/50 inline-block px-3 py-2 rounded-xl border border-gray-100 shadow-sm leading-relaxed max-w-[280px] mx-auto">
                         <span className="text-nepaliRed font-bold block mb-1">Notice</span>
-                        Only <span className="font-bold text-gray-800">Kta</span> & <span className="font-bold text-gray-800">Kti</span> are matched (Opposite Gender) with age difference ±2 years.
+                        Only <span className="font-bold text-gray-800">Kta</span> & <span className="font-bold text-gray-800">Kti</span> are matched (Opposite Gender) with age difference ±3 years.
                     </p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest pt-2">
                         🇳🇵 Made for Nepali Hearts 🇳🇵
                     </p>
                 </div>
             )}
+        </div>
+
+        {/* Pickup Line Generator & Date Ideas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <GlassCard className="bg-gradient-to-br from-purple-50 to-white border-purple-100/50">
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-purple-600 uppercase tracking-widest text-xs flex items-center gap-2">
+                        <Icons.Magic className="w-4 h-4" /> Flirty Nepali
+                    </h3>
+                    <button onClick={generatePickupLine} className="p-1 hover:bg-purple-100 rounded-full text-purple-500 transition-colors">
+                        <Icons.Shuffle className="w-4 h-4" />
+                    </button>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-purple-50 min-h-[60px] flex items-center justify-center text-center">
+                    <p className="text-sm text-purple-900 font-medium leading-relaxed">
+                        {pickupLine || "Click shuffle for a smooth line! 😉"}
+                    </p>
+                </div>
+            </GlassCard>
+
+            <GlassCard className="bg-gradient-to-br from-green-50 to-white border-green-100/50">
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-green-600 uppercase tracking-widest text-xs flex items-center gap-2">
+                        <Icons.Sparkle className="w-4 h-4" /> Date Idea
+                    </h3>
+                    <button onClick={generateDateIdea} className="p-1 hover:bg-green-100 rounded-full text-green-500 transition-colors">
+                        <Icons.Shuffle className="w-4 h-4" />
+                    </button>
+                </div>
+                <div className="bg-white/80 p-3 rounded-lg border border-green-50 min-h-[60px] flex items-center justify-center text-center">
+                    <p className="text-sm text-green-900 font-medium leading-relaxed">
+                        {dateIdea || "Where should you go? Spin to see! 🎡"}
+                    </p>
+                </div>
+            </GlassCard>
         </div>
 
         {/* Love Calculator Card */}

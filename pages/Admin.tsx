@@ -1,18 +1,23 @@
-
 import React, { useEffect, useState } from 'react';
-import { User, Report, Match } from '../types';
-import { apiGetAdminData, apiBanUser, apiResetAllData } from '../services/mockBackend';
-import { Button, Card, Icons } from '../components/UI';
+import { User, Report, Match, Announcement } from '../types';
+import { apiGetAdminData, apiBanUser, apiResetAllData, apiGetAnnouncement, apiPostAnnouncement, apiDeleteAnnouncement } from '../services/mockBackend';
+import { Button, Card, Icons, Input } from '../components/UI';
 import { SQL_RESET_SCRIPT } from '../constants';
 
 export const Admin: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const [data, setData] = useState<{ users: User[], reports: Report[], matches: Match[] } | null>(null);
     const [resetting, setResetting] = useState(false);
     const [showSql, setShowSql] = useState(false);
+    
+    // Announcement State
+    const [announcementText, setAnnouncementText] = useState('');
+    const [currentAnnouncement, setCurrentAnnouncement] = useState<Announcement | null>(null);
 
     const refresh = async () => {
         const d = await apiGetAdminData();
         setData(d);
+        const ann = await apiGetAnnouncement();
+        setCurrentAnnouncement(ann);
     };
 
     useEffect(() => { refresh(); }, []);
@@ -20,6 +25,21 @@ export const Admin: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const handleBan = async (uid: string) => {
         if(confirm('Ban this user?')) {
             await apiBanUser(uid);
+            refresh();
+        }
+    };
+
+    const handlePostAnnouncement = async () => {
+        if(!announcementText.trim()) return;
+        await apiPostAnnouncement(announcementText);
+        setAnnouncementText('');
+        refresh();
+        alert('Announcement posted!');
+    };
+
+    const handleDeleteAnnouncement = async () => {
+        if(currentAnnouncement) {
+            await apiDeleteAnnouncement(currentAnnouncement.id);
             refresh();
         }
     };
@@ -71,6 +91,35 @@ export const Admin: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     <p className="text-3xl font-bold text-red-500">{data.reports.length}</p>
                 </Card>
             </div>
+
+            {/* Announcement Manager */}
+            <Card className="mb-8 border-l-4 border-indigo-500">
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Icons.Megaphone className="w-6 h-6 text-indigo-500" />
+                    Manage Announcement
+                </h2>
+                <div className="flex gap-4 items-end">
+                    <Input 
+                        label="New Announcement"
+                        placeholder="Type message for all users..."
+                        value={announcementText}
+                        onChange={e => setAnnouncementText(e.target.value)}
+                        className="flex-1"
+                    />
+                    <Button onClick={handlePostAnnouncement} className="mb-3">Post</Button>
+                </div>
+                {currentAnnouncement && (
+                    <div className="mt-4 bg-indigo-50 p-4 rounded-lg flex justify-between items-center border border-indigo-100">
+                        <div>
+                            <span className="text-xs font-bold text-indigo-400 uppercase">Active Now</span>
+                            <p className="font-medium text-gray-800">{currentAnnouncement.text}</p>
+                        </div>
+                        <button onClick={handleDeleteAnnouncement} className="text-red-500 hover:bg-red-50 p-2 rounded-full">
+                            <Icons.Trash className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+            </Card>
 
             <h2 className="text-xl font-bold mb-4">Recent Reports</h2>
             <div className="bg-white rounded-xl shadow overflow-x-auto mb-8">

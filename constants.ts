@@ -1,11 +1,10 @@
-
 import { Role } from './types';
 
 export const APP_NAME = "Nepali Love Finder";
 export const MIN_AGE = 13;
-export const MAX_AGE_GAP = 2; // +/- years
+export const MAX_AGE_GAP = 3; // +/- 3 years
 export const SYSTEM_USER_ID = 'system-sender';
-export const MESSAGE_TTL = 120000; // 2 minutes in milliseconds
+export const MESSAGE_TTL = 120000; // 2 minutes
 
 export const SAFETY_TIPS = [
   "Do not share your personal phone number or address.",
@@ -21,6 +20,22 @@ export const INTERESTS = [
     "Gaming 🎮", "Anime ⛩️", "Bikes 🏍️", "Poetry ✍️"
 ];
 
+// High Quality DiceBear Avatars
+export const PRESET_AVATARS = [
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Sita",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Ram",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Kiran",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Maya",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Tara",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Sam",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Gita",
+  "https://api.dicebear.com/7.x/avataaars/svg?seed=Ravi"
+];
+
 export const HOROSCOPES = [
     "Love is just around the corner. Be ready to say Namaste! 🙏",
     "Your soulmate is also looking for you right now. ✨",
@@ -29,6 +44,32 @@ export const HOROSCOPES = [
     "Your charm is irresistible today. Use it wisely! 😉",
     "Someone with a great smile is waiting for you. 😊",
     "Good vibes only! Your energy attracts love. ⚡"
+];
+
+export const PICKUP_LINES = [
+    "Are you a Momo? Because I want to keep you warm and close. 🥟",
+    "Timro ghar kata ho? Mero dil ma ta timi nai chau. ❤️",
+    "Do you like Chiya? Because you are Tea-rific! ☕",
+    "Excuse me, do you have a map? I just got lost in your eyes. 🗺️",
+    "Are you wifi? Because I'm feeling a connection. 📶",
+    "Timi lai dekhda ta Pindalu pani mitho lagcha! 😉",
+    "Are you from Kathmandu? Because you are the capital of my heart. 🇳🇵",
+    "Do you believe in love at first sight, or should I walk by again?",
+    "If you were a vegetable, you'd be a 'Cute-cumber'. 🥒",
+    "Is your name Google? Because you have everything I've been searching for."
+];
+
+export const DATE_IDEAS = [
+    "Evening walk at Boudha Stupa 🕊️",
+    "Hot Chiya date at Basantapur Durbar Square ☕",
+    "Boating in Fewa Lake, Pokhara 🛶",
+    "Momo hunting in the local galli 🥟",
+    "Movie date at QFX 🎬",
+    "Hiking to Shivapuri on Saturday 🥾",
+    "Street food tour in Mangalbazar 🍡",
+    "Sunset view from Swayambhu 🌅",
+    "Coffee date at Himalayan Java 🥯",
+    "Bike ride to Nagarkot 🏍️"
 ];
 
 export const ICEBREAKERS = [
@@ -164,6 +205,14 @@ create table if not exists public.reports (
   resolved boolean default false
 );
 
+-- NEW: Announcements Table
+create table if not exists public.announcements (
+  id uuid default gen_random_uuid() primary key,
+  text text not null,
+  active boolean default true,
+  created_at bigint
+);
+
 -- 2. MIGRATION: Add 'interests' column if missing
 alter table public.profiles add column if not exists interests text[] default '{}';
 
@@ -179,6 +228,9 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'profiles') THEN
     alter publication supabase_realtime add table public.profiles;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'announcements') THEN
+    alter publication supabase_realtime add table public.announcements;
+  END IF;
 END $$;
 
 -- 4. Disable RLS for prototype (Fixes permission errors)
@@ -186,6 +238,7 @@ alter table public.profiles disable row level security;
 alter table public.matches disable row level security;
 alter table public.messages disable row level security;
 alter table public.reports disable row level security;
+alter table public.announcements disable row level security;
 `;
 
 export const SQL_RESET_SCRIPT = `
@@ -193,7 +246,7 @@ export const SQL_RESET_SCRIPT = `
 -- Use it in the Supabase Dashboard SQL Editor.
 
 -- 1. Delete all App Data
-TRUNCATE TABLE public.messages, public.matches, public.reports, public.profiles CASCADE;
+TRUNCATE TABLE public.messages, public.matches, public.reports, public.profiles, public.announcements CASCADE;
 
 -- 2. Delete all Auth Users (Requires admin privileges)
 -- This deletes the actual login accounts.

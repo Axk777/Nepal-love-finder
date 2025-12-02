@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 // --- Button ---
@@ -158,5 +157,17 @@ export const Icons = {
   ),
   Gamepad: (props: any) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+  ),
+  Shuffle: (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l14.2-13"/><path d="M2 5h1.6c1.3 0 2.5.6 3.3 1.7l3.4 4.6"/><path d="M22 5h-1.4c-1.3 0-2.5.6-3.3 1.7l-3.4 4.6"/><path d="M22 18h-1.4c-1.3 0-2.5-.6-3.3-1.7l-14.2-13"/><polyline points="17 21 22 18 17 15"/><polyline points="17 8 22 5 17 2"/></svg>
+  ),
+  Magic: (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m19 14 3-3-3-3"/><path d="m5 17 3-3-3-3"/><path d="m15 10 4-4-4-4"/><path d="M21 2 12 11"/><path d="m12 22 10-10"/><path d="M2 22 11 13"/></svg>
+  ),
+  Megaphone: (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+  ),
+  Trash: (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
   )
 };

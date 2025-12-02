@@ -1,4 +1,3 @@
-
 export enum Role {
   KTA = 'Kta', // Boy
   KTI = 'Kti', // Girl
@@ -14,7 +13,7 @@ export interface User {
   password?: string; 
   bio?: string;
   photoUrl?: string;
-  interests?: string[]; // New
+  interests?: string[]; 
   online: boolean;
   lastSeen: number;
   blockedUsers: string[];
@@ -46,6 +45,13 @@ export interface Report {
   reason: string;
   timestamp: number;
   resolved: boolean;
+}
+
+export interface Announcement {
+  id: string;
+  text: string;
+  active: boolean;
+  createdAt: number;
 }
 
 export enum ViewState {

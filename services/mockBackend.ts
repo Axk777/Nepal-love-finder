@@ -1,5 +1,4 @@
-
-import { User, Role, Match, Message, Report } from '../types';
+import { User, Role, Match, Message, Report, Announcement } from '../types';
 import { supabase } from '../supabaseClient';
 import { MAX_AGE_GAP, MIN_AGE, PROFANITY_LIST, SYSTEM_USER_ID, MESSAGE_TTL } from '../constants';
 
@@ -45,6 +44,13 @@ const mapReport = (data: any): Report => ({
   reason: data.reason,
   timestamp: data.timestamp,
   resolved: data.resolved
+});
+
+const mapAnnouncement = (data: any): Announcement => ({
+    id: data.id,
+    text: data.text,
+    active: data.active,
+    createdAt: data.created_at
 });
 
 // --- System Checks ---
@@ -305,7 +311,7 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
   
   // STRICT LOGIC: Opposite Gender Only
   const targetRole = me.role === Role.KTA ? Role.KTI : Role.KTA;
-  // STRICT LOGIC: +/- 2 Years
+  // STRICT LOGIC: +/- 3 Years
   const minAge = Math.max(MIN_AGE, me.age - MAX_AGE_GAP);
   const maxAge = me.age + MAX_AGE_GAP;
   
@@ -536,6 +542,35 @@ export const apiGetOnlineCountAsync = async () => {
     }
 };
 
+// --- Announcement Services ---
+
+export const apiGetAnnouncement = async (): Promise<Announcement | null> => {
+    try {
+        const { data } = await supabase
+            .from('announcements')
+            .select('*')
+            .eq('active', true)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        return data ? mapAnnouncement(data) : null;
+    } catch (e) {
+        return null;
+    }
+};
+
+export const apiPostAnnouncement = async (text: string) => {
+    await supabase.from('announcements').insert({
+        text,
+        active: true,
+        created_at: Date.now()
+    });
+};
+
+export const apiDeleteAnnouncement = async (id: string) => {
+    await supabase.from('announcements').delete().eq('id', id);
+};
+
 // --- RESET SERVICES (Danger Zone) ---
 
 export const apiResetAllData = async () => {
@@ -543,6 +578,7 @@ export const apiResetAllData = async () => {
         await supabase.from('messages').delete().neq('chat_room_id', 'cleanup'); 
         await supabase.from('matches').delete().neq('chat_room_id', 'cleanup');
         await supabase.from('reports').delete().neq('reason', 'cleanup');
+        await supabase.from('announcements').delete().neq('text', 'cleanup');
         await supabase.from('profiles').delete().neq('email', 'cleanup');
         return true;
     } catch (e) {
