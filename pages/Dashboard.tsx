@@ -1,8 +1,11 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { User, Role } from '../types';
 import { Button, GlassCard, Badge, Icons } from '../components/UI';
-import { apiFindMatch, apiGetActiveMatch, apiGetOnlineCountAsync, apiCancelSearch, apiGetAnnouncement } from '../services/mockBackend';
+import { apiFindMatch, apiGetActiveMatch, apiGetOnlineCountAsync, apiCancelSearch, apiGetAnnouncement, apiGetFavorites, apiUpdateProfile } from '../services/mockBackend';
 import { SAFETY_TIPS, HOROSCOPES, PICKUP_LINES, DATE_IDEAS } from '../constants';
+import { supabase } from '../supabaseClient';
+import { requestNotificationPermission, logAnalyticsEvent, sendLocalNotification } from '../firebaseClient';
 
 interface DashboardProps {
   user: User;
@@ -19,6 +22,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
   const [linkCopied, setLinkCopied] = useState(false);
   const [dailyHoroscope, setDailyHoroscope] = useState('');
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<User[]>([]);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [pushEnabled, setPushEnabled] = useState(!!user.fcmToken);
   
   // Celebration State
   const [matchFoundData, setMatchFoundData] = useState<User | null>(null);
@@ -45,16 +51,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
             const count = await apiGetOnlineCountAsync();
             setOnlineCount(count);
             
-            // Check for announcements
             const ann = await apiGetAnnouncement();
-            if(ann && isMounted.current) {
-                setAnnouncement(ann.text);
-            }
+            if(ann && isMounted.current) setAnnouncement(ann.text);
+
+            const favs = await apiGetFavorites(user.id);
+            if(favs && isMounted.current) setFavorites(favs);
         }
     };
     updateStats();
 
     const statsInterval = setInterval(updateStats, 10000);
+
+    // Realtime Listener for Favorite Status Updates
+    const favIds = (user.favorites || []);
+    let favSubscription: any;
+    if (favIds.length > 0) {
+        favSubscription = supabase.channel('favorites-status')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'profiles' },
+                (payload) => {
+                    const updatedUser = payload.new as User;
+                    if (favIds.includes(updatedUser.id)) {
+                        // Check if they just came online
+                        if (updatedUser.online && payload.old && !payload.old.online) {
+                            const msg = `✨ ${updatedUser.displayName} just came online!`;
+                            setNotification(msg);
+                            // Trigger Browser Notification
+                            sendLocalNotification('Friend Online', msg);
+                            setTimeout(() => setNotification(null), 5000);
+                        }
+                        // Refresh list
+                        apiGetFavorites(user.id).then(f => isMounted.current && setFavorites(f));
+                    }
+                }
+            )
+            .subscribe();
+    }
 
     return () => {
         isMounted.current = false;
@@ -62,8 +95,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
         if (findingRef.current) {
             apiCancelSearch(user.id);
         }
+        if (favSubscription) favSubscription.unsubscribe();
     };
-  }, [user.id, user.displayName]);
+  }, [user.id, user.displayName, user.favorites]);
 
   useEffect(() => {
     const checkActive = async () => {
@@ -191,6 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
                   text: 'Come find your soul mate on Nepali Love Finder!',
                   url: window.location.href,
               });
+              logAnalyticsEvent('share_app');
           } catch (error) {
               handleCopyLink();
           }
@@ -202,9 +237,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
   const handleCopyLink = () => {
       navigator.clipboard.writeText(window.location.href);
       setLinkCopied(true);
+      logAnalyticsEvent('copy_link');
       setTimeout(() => {
           if (isMounted.current) setLinkCopied(false);
       }, 2000);
+  };
+
+  const enableNotifications = async () => {
+      const token = await requestNotificationPermission();
+      if (token) {
+          await apiUpdateProfile(user.id, { fcmToken: token });
+          setPushEnabled(true);
+          // Send a test notification immediately to prove it works
+          sendLocalNotification("Notifications Active", "You will now be notified when your favorites come online.");
+          alert("Notifications Enabled! You will be notified when your favorites come online.");
+          logAnalyticsEvent('enable_push');
+      } else {
+          alert("Could not enable notifications. Please allow them in your browser settings.");
+      }
   };
 
   if (matchFoundData) {
@@ -276,6 +326,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
         </div>
       </header>
 
+      {/* Notification Toast */}
+      {notification && (
+          <div className="fixed top-20 right-4 z-50 animate-fade-in-up">
+              <div className="bg-white/90 backdrop-blur-md border border-yellow-200 shadow-xl rounded-xl p-4 flex items-center gap-3">
+                  <div className="bg-yellow-100 p-2 rounded-full">
+                      <Icons.Bell className="w-5 h-5 text-yellow-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-800">{notification}</p>
+              </div>
+          </div>
+      )}
+
       {/* Mobile Only Badge */}
       <div className="sm:hidden flex justify-center -mt-3 mb-2 relative z-20">
           <div className="flex items-center gap-1 bg-white/90 backdrop-blur border border-gray-100 px-3 py-1 rounded-b-xl shadow-sm">
@@ -338,6 +400,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
               </div>
           )}
         </GlassCard>
+
+        {/* Favorites Section */}
+        {favorites.length > 0 && (
+            <div className="animate-fade-in-up">
+                <div className="flex items-center justify-between mb-2 px-1">
+                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1">
+                        <Icons.StarFilled className="w-3 h-3 text-yellow-400" /> My Favorites ({favorites.length}/3)
+                    </h3>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {favorites.map(fav => (
+                        <div key={fav.id} className="flex-shrink-0 flex flex-col items-center gap-1 w-16">
+                            <div className="relative">
+                                <img src={fav.photoUrl || ''} className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover bg-gray-100" />
+                                {fav.online ? (
+                                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                                ) : (
+                                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-gray-300 border-2 border-white rounded-full"></span>
+                                )}
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-600 truncate w-full text-center">{fav.displayName}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
         {/* Stats & Horoscope */}
         <div className="grid grid-cols-2 gap-3">
@@ -449,6 +537,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNavigate, onLogout
                 </div>
             )}
         </div>
+
+        {/* Enable Notifications CTA */}
+        {!pushEnabled && (
+            <GlassCard className="bg-gradient-to-br from-cyan-50 to-white border-cyan-100/50 mb-4 cursor-pointer" onClick={enableNotifications}>
+                <div className="flex items-center gap-3">
+                    <div className="bg-cyan-100 p-2 rounded-full">
+                        <Icons.Bell className="w-5 h-5 text-cyan-600" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="text-xs font-bold text-cyan-700 uppercase">Don't Miss a Match!</h4>
+                        <p className="text-xs text-gray-500">Enable notifications to know when someone likes you.</p>
+                    </div>
+                    <Button variant="secondary" className="text-xs py-2 px-3 shadow-none bg-cyan-500 hover:bg-cyan-600">Enable</Button>
+                </div>
+            </GlassCard>
+        )}
 
         {/* Pickup Line Generator & Date Ideas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -9,12 +9,14 @@ import { Chat } from './pages/Chat';
 import { Profile } from './pages/Profile';
 import { Admin } from './pages/Admin';
 import { Setup } from './pages/Setup';
+import { Icons } from './components/UI';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewState>(ViewState.LANDING);
   const [loading, setLoading] = useState(true);
   const [setupError, setSetupError] = useState('');
+  const [showDownloadPopup, setShowDownloadPopup] = useState(true);
 
   // Safe Error Handling helper
   const safeError = (e: any) => {
@@ -145,39 +147,88 @@ const App: React.FC = () => {
       );
   }
 
-  // Routing
+  // Define main content based on state
+  let content;
   if (view === ViewState.SETUP) {
-      return <Setup errorType={setupError} onSkip={handleSkip} />;
-  }
-
-  if (!user) {
+      content = <Setup errorType={setupError} onSkip={handleSkip} />;
+  } else if (!user) {
     if (view === ViewState.LANDING && setupError === "CONNECTION_ERROR") {
-        return <Auth onLogin={handleLogin} onSignup={handleSignup} />;
+        content = <Auth onLogin={handleLogin} onSignup={handleSignup} />;
+    } else {
+        content = <Auth onLogin={handleLogin} onSignup={handleSignup} />;
     }
-    return <Auth onLogin={handleLogin} onSignup={handleSignup} />;
+  } else {
+      try {
+          switch (view) {
+            case ViewState.ADMIN:
+                content = user.role === Role.ADMIN ? <Admin onLogout={handleLogout} /> : <div className="p-4">Unauthorized</div>;
+                break;
+            case ViewState.CHAT:
+                content = <Chat currentUser={user} onExit={() => setView(ViewState.DASHBOARD)} />;
+                break;
+            case ViewState.PROFILE:
+                content = <Profile user={user} onBack={() => setView(ViewState.DASHBOARD)} onUpdate={(u) => setUser(u)} />;
+                break;
+            case ViewState.DASHBOARD:
+            default:
+                content = <Dashboard user={user} onNavigate={setView} onLogout={handleLogout} />;
+                break;
+          }
+      } catch (err) {
+          content = (
+              <div className="p-8 text-center">
+                  <h2 className="text-xl font-bold mb-4">Something went wrong.</h2>
+                  <button onClick={() => window.location.reload()} className="bg-nepaliRed text-white px-4 py-2 rounded">Reload App</button>
+              </div>
+          );
+      }
   }
 
-  try {
-      switch (view) {
-        case ViewState.ADMIN:
-            return user.role === Role.ADMIN ? <Admin onLogout={handleLogout} /> : <div className="p-4">Unauthorized</div>;
-        case ViewState.CHAT:
-            return <Chat currentUser={user} onExit={() => setView(ViewState.DASHBOARD)} />;
-        case ViewState.PROFILE:
-            return <Profile user={user} onBack={() => setView(ViewState.DASHBOARD)} onUpdate={(u) => setUser(u)} />;
-        case ViewState.DASHBOARD:
-        default:
-            return <Dashboard user={user} onNavigate={setView} onLogout={handleLogout} />;
-      }
-  } catch (err) {
-      // Fallback UI if rendering crashes
-      return (
-          <div className="p-8 text-center">
-              <h2 className="text-xl font-bold mb-4">Something went wrong.</h2>
-              <button onClick={() => window.location.reload()} className="bg-nepaliRed text-white px-4 py-2 rounded">Reload App</button>
-          </div>
-      );
-  }
+  return (
+    <>
+      {showDownloadPopup && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in-up">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-gray-200 text-center relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-nepaliRed to-pink-600"></div>
+               <button
+                 onClick={() => setShowDownloadPopup(false)}
+                 className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+               >
+                 <Icons.X className="w-5 h-5" />
+               </button>
+    
+               <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 ring-4 ring-blue-100/50">
+                  <Icons.Download className="w-8 h-8 text-nepaliBlue" />
+               </div>
+    
+               <h2 className="text-xl font-bold text-gray-800 mb-2">Need Application Version</h2>
+               <p className="text-sm text-gray-600 mb-6 leading-relaxed px-2">
+                 For the best experience, download our latest Android APK. It's faster and smoother!
+               </p>
+    
+               <a
+                 href="https://www.mediafire.com/file/3p2u4779phcrnbe/app-release_%25281%2529.apk/file"
+                 target="_blank"
+                 rel="noreferrer"
+                 className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-nepaliRed to-pink-600 text-white font-bold py-3.5 rounded-xl hover:shadow-lg hover:shadow-red-500/30 hover:scale-[1.02] transition-all mb-4"
+                 onClick={() => setShowDownloadPopup(false)}
+               >
+                 <Icons.Download className="w-5 h-5" />
+                 Download APK
+               </a>
+    
+               <button
+                 onClick={() => setShowDownloadPopup(false)}
+                 className="text-xs text-gray-400 hover:text-gray-700 font-bold uppercase tracking-wider transition-colors"
+               >
+                 Continue on Web
+               </button>
+            </div>
+        </div>
+      )}
+      {content}
+    </>
+  );
 };
 
 export default App;

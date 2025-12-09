@@ -1,5 +1,7 @@
 import { User, Role, Match, Message, Report, Announcement } from '../types';
 import { supabase } from '../supabaseClient';
+import { rtdb, logAnalyticsEvent } from '../firebaseClient'; 
+import { ref, set, onDisconnect, get } from "firebase/database";
 import { MAX_AGE_GAP, MIN_AGE, PROFANITY_LIST, SYSTEM_USER_ID, MESSAGE_TTL } from '../constants';
 
 // --- Helpers to map Supabase snake_case to TS camelCase ---
@@ -13,6 +15,8 @@ const mapUser = (data: any): User => ({
   bio: data.bio || '',
   photoUrl: data.photo_url || '',
   interests: data.interests || [],
+  favorites: data.favorites || [],
+  fcmToken: data.fcm_token,
   online: data.online,
   lastSeen: data.last_seen,
   blockedUsers: data.blocked_users || [],
@@ -76,7 +80,7 @@ export const apiCheckDatabase = async () => {
             }
 
             // Check for schema/column updates (Migrations)
-            const { error: colError } = await supabase.from('profiles').select('interests').limit(1);
+            const { error: colError } = await supabase.from('profiles').select('interests, favorites, fcm_token').limit(1);
             if (colError && (colError.message.includes('Could not find the') || colError.code === 'PGRST200')) {
                 throw new Error("SCHEMA_MISMATCH");
             }
@@ -104,20 +108,62 @@ export const apiCheckDatabase = async () => {
     }
 };
 
-// --- Heartbeat ---
+// --- Heartbeat (Hybrid: Firebase + Supabase) ---
 export const apiHeartbeat = async (userId: string) => {
     if (!userId) return false;
+    
+    // 1. Write to Firebase (Fast)
+    // Wrapped in try/catch to ensure app doesn't crash if Firebase is mocked or fails
     try {
+        const userStatusRef = ref(rtdb, 'status/' + userId);
+        set(userStatusRef, {
+            state: 'online',
+            last_changed: Date.now(),
+        });
+        onDisconnect(userStatusRef).set({
+            state: 'offline',
+            last_changed: Date.now(),
+        });
+    } catch (e) {
+        // Ignore firebase errors
+    }
+
+    try {
+        // 2. Keep Supabase update for legacy compatibility (Matchmaking needs it)
         const { error } = await supabase.from('profiles').update({
             last_seen: Date.now(),
             online: true
         }).eq('id', userId);
         
-        // If error (e.g., user deleted by admin reset), return false
         if (error) return false;
         return true;
     } catch (e) {
         return false;
+    }
+};
+
+export const apiGetOnlineCountAsync = async () => {
+    try {
+        // Try Firebase First
+        const snapshot = await get(ref(rtdb, 'status'));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            let count = 0;
+            const threshold = Date.now() - (120 * 1000); // 2 mins
+            Object.values(data).forEach((s: any) => {
+                if (s.state === 'online' || s.last_changed > threshold) count++;
+            });
+            return count > 0 ? count : 1;
+        }
+        throw new Error("Firebase empty");
+    } catch(e) {
+        // Fallback to Supabase
+        const threshold = Date.now() - (90 * 1000);
+        const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gt('last_seen', threshold);
+        return count && count > 0 ? count : 1;
     }
 };
 
@@ -177,6 +223,7 @@ export const apiSignup = async (data: Partial<User>): Promise<User> => {
     bio: data.bio || '',
     photo_url: data.photoUrl || `https://picsum.photos/seed/${userId}/200`,
     interests: [],
+    favorites: [],
     online: true,
     last_seen: Date.now(),
     blocked_users: [],
@@ -190,11 +237,13 @@ export const apiSignup = async (data: Partial<User>): Promise<User> => {
         profileError.message.includes('Could not find the table')) {
         throw new Error("DATABASE ERROR: Tables missing. Please run the SQL script in your Supabase Dashboard.");
     }
-    if (profileError.message.includes("Could not find the 'interests' column")) {
+    if (profileError.message.includes("Could not find the") && profileError.message.includes("column")) {
          throw new Error("SCHEMA_MISMATCH");
     }
     throw profileError;
   }
+  
+  logAnalyticsEvent('sign_up', { method: 'email' });
 
   return mapUser(newUserProfile);
 };
@@ -209,7 +258,6 @@ export const apiLogin = async (email: string, pass: string): Promise<User> => {
       if (error.message.includes("Email not confirmed")) {
           throw new Error("EMAIL_NOT_CONFIRMED");
       }
-      // Specific error guidance for Admin
       if (email === 'admin@admin.com') {
           throw new Error("Admin account not found. Please switch to Sign Up to create it.");
       }
@@ -229,12 +277,11 @@ export const apiLogin = async (email: string, pass: string): Promise<User> => {
           throw new Error("DATABASE ERROR: Tables missing.");
       }
       if (profileError.code === 'PGRST116') {
-           // Auto-create profile if missing (Self-healing)
            const defaultProfile = {
                 id: authData.user.id,
                 display_name: email.split('@')[0],
                 age: 18,
-                role: email === 'admin@admin.com' ? Role.ADMIN : Role.KTA, // Check for admin here too
+                role: email === 'admin@admin.com' ? Role.ADMIN : Role.KTA, 
                 email: email,
                 online: true,
                 last_seen: Date.now()
@@ -250,6 +297,9 @@ export const apiLogin = async (email: string, pass: string): Promise<User> => {
   } catch (e) {
       console.warn("Failed to update last_seen on login", e);
   }
+  
+  logAnalyticsEvent('login', { method: 'email' });
+  
   return mapUser(profile);
 };
 
@@ -257,6 +307,16 @@ export const apiLogout = async (userId: string) => {
     if (userId === "offline") return; 
     try {
         await supabase.from('profiles').update({ online: false, last_seen: Date.now() }).eq('id', userId);
+        
+        // Update Firebase Presence
+        // Try/Catch to handle mock/failure without blocking logout
+        try {
+            const userStatusRef = ref(rtdb, 'status/' + userId);
+            set(userStatusRef, { state: 'offline', last_changed: Date.now() });
+        } catch (e) {
+            // ignore
+        }
+
         await supabase.auth.signOut();
     } catch(e) {
         console.warn("Logout error", e);
@@ -269,6 +329,8 @@ export const apiUpdateProfile = async (userId: string, updates: Partial<User>): 
   if (updates.photoUrl !== undefined) dbUpdates.photo_url = updates.photoUrl;
   if (updates.age !== undefined) dbUpdates.age = updates.age;
   if (updates.interests !== undefined) dbUpdates.interests = updates.interests;
+  if (updates.favorites !== undefined) dbUpdates.favorites = updates.favorites;
+  if (updates.fcmToken !== undefined) dbUpdates.fcm_token = updates.fcmToken;
   
   const { data, error } = await supabase
     .from('profiles')
@@ -278,7 +340,7 @@ export const apiUpdateProfile = async (userId: string, updates: Partial<User>): 
     .single();
 
   if (error) {
-      if (error.message.includes("Could not find the 'interests' column")) {
+      if (error.message.includes("Could not find the") && (error.message.includes('interests') || error.message.includes('favorites') || error.message.includes('fcm_token'))) {
          throw new Error("SCHEMA_MISMATCH");
       }
       throw error;
@@ -286,11 +348,38 @@ export const apiUpdateProfile = async (userId: string, updates: Partial<User>): 
   return mapUser(data);
 };
 
+export const apiToggleFavorite = async (userId: string, targetId: string): Promise<User> => {
+    const { data: user } = await supabase.from('profiles').select('favorites').eq('id', userId).single();
+    const currentFavorites: string[] = user?.favorites || [];
+    
+    let newFavorites;
+    if (currentFavorites.includes(targetId)) {
+        newFavorites = currentFavorites.filter(id => id !== targetId);
+    } else {
+        if (currentFavorites.length >= 3) {
+            throw new Error("You can only have up to 3 favorites.");
+        }
+        newFavorites = [...currentFavorites, targetId];
+    }
+    
+    return apiUpdateProfile(userId, { favorites: newFavorites });
+};
+
+export const apiGetFavorites = async (userId: string): Promise<User[]> => {
+    const { data: user } = await supabase.from('profiles').select('favorites').eq('id', userId).single();
+    const favIds: string[] = user?.favorites || [];
+    
+    if (favIds.length === 0) return [];
+    
+    const { data: profiles } = await supabase.from('profiles').select('*').in('id', favIds);
+    return (profiles || []).map(mapUser);
+};
+
 // --- Matching Services ---
 
 export const apiFindMatch = async (currentUserId: string): Promise<Match | null> => {
-  // Use heartbeat to keep alive, but don't fail if error
   await apiHeartbeat(currentUserId);
+  logAnalyticsEvent('search_started');
 
   const { data: existingMatch } = await supabase.from('matches')
       .select('*')
@@ -309,15 +398,12 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
   const { data: me } = await supabase.from('profiles').select('*').eq('id', currentUserId).single();
   if (!me) throw new Error("Profile not found");
   
-  // STRICT LOGIC: Opposite Gender Only
   const targetRole = me.role === Role.KTA ? Role.KTI : Role.KTA;
-  // STRICT LOGIC: +/- 3 Years
   const minAge = Math.max(MIN_AGE, me.age - MAX_AGE_GAP);
   const maxAge = me.age + MAX_AGE_GAP;
   
   const staleThreshold = Date.now() - (2 * 60 * 1000); 
   
-  // Find open tickets (active=true, user_b=null)
   const { data: tickets } = await supabase.from('matches')
       .select('id, user_a, created_at')
       .is('user_b', null)
@@ -329,24 +415,17 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
       for (const ticket of tickets) {
           if (ticket.user_a === currentUserId) continue;
 
-          // Fetch details of person waiting
           const { data: waiter } = await supabase.from('profiles').select('*').eq('id', ticket.user_a).single();
           if (!waiter) continue;
 
-          // Don't match with zombies
           if (waiter.last_seen < staleThreshold) continue;
           
-          // STRICT CHECKS
           if (waiter.role !== targetRole) continue;
           if (waiter.age < minAge || waiter.age > maxAge) continue;
           
-          // Don't match if blocked
           if ((me.blocked_users || []).includes(waiter.id)) continue;
           if ((waiter.blocked_users || []).includes(me.id)) continue;
 
-          // Check if already matched recently (Optional, skipping for prototype simplicity)
-
-          // Join the ticket
           const { data: joinedMatch } = await supabase
               .from('matches')
               .update({ user_b: currentUserId })
@@ -357,12 +436,18 @@ export const apiFindMatch = async (currentUserId: string): Promise<Match | null>
               
           if (joinedMatch) {
               await apiSendMessage(joinedMatch.chat_room_id, SYSTEM_USER_ID, "It's a match! Say Namaste. 🙏", true);
+              logAnalyticsEvent('match_found');
+              
+              if (waiter.fcm_token) {
+                  // Simulate Push
+                  console.log(`[PUSH] Sending 'Match Found' to ${waiter.display_name}`);
+              }
+              
               return mapMatch(joinedMatch);
           }
       }
   }
 
-  // If no match found, create a ticket
   const chatRoomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
   await supabase.from('matches').insert({
       user_a: currentUserId,
@@ -447,7 +532,6 @@ export const subscribeToMessages = (chatRoomId: string, onMessage: (msg: Message
         .subscribe();
 };
 
-// Clean up old messages (The Janitor)
 const apiCleanupOldMessages = async (chatRoomId: string) => {
     const threshold = Date.now() - MESSAGE_TTL;
     await supabase.from('messages')
@@ -457,7 +541,6 @@ const apiCleanupOldMessages = async (chatRoomId: string) => {
 };
 
 export const apiSendMessage = async (chatRoomId: string, fromUserId: string, text: string, isSystem = false) => {
-  // Trigger cleanup
   apiCleanupOldMessages(chatRoomId);
 
   const cleanText = text.split(' ').map(word => {
@@ -472,6 +555,10 @@ export const apiSendMessage = async (chatRoomId: string, fromUserId: string, tex
       is_system: isSystem
   });
   if (error) console.error("Send msg error", error);
+  
+  if (!isSystem && !error) {
+      logAnalyticsEvent('send_message');
+  }
 };
 
 // --- Safety Services ---
@@ -525,21 +612,6 @@ export const apiGetAdminData = async () => {
 
 export const apiBanUser = async (userId: string) => {
   await supabase.from('profiles').update({ is_banned: true, online: false }).eq('id', userId);
-};
-
-export const apiGetOnlineCountAsync = async () => {
-    try {
-        const threshold = Date.now() - (90 * 1000);
-        const { count, error } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .gt('last_seen', threshold);
-
-        if (error) return 1;
-        return count && count > 0 ? count : 1;
-    } catch(e) {
-        return 1;
-    }
 };
 
 // --- Announcement Services ---

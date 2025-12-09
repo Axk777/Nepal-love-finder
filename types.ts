@@ -14,6 +14,8 @@ export interface User {
   bio?: string;
   photoUrl?: string;
   interests?: string[]; 
+  favorites?: string[];
+  fcmToken?: string; // NEW
   online: boolean;
   lastSeen: number;
   blockedUsers: string[];

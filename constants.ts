@@ -17,7 +17,8 @@ export const INTERESTS = [
     "Momo Lover 🥟", "Dal Bhat Power 🍛", "Trekking 🏔️", "Guitar 🎸", 
     "Cricket 🏏", "Football ⚽", "Movies 🎬", "Dancing 💃", 
     "Reading 📚", "Traveling ✈️", "Photography 📸", "Cooking 🍳",
-    "Gaming 🎮", "Anime ⛩️", "Bikes 🏍️", "Poetry ✍️"
+    "Gaming 🎮", "Anime ⛩️", "Bikes 🏍️", "Poetry ✍️",
+    "TikTok 🎵", "Badminton 🏸", "Hiking 🥾", "K-Pop 🎤"
 ];
 
 // High Quality DiceBear Avatars
@@ -43,7 +44,9 @@ export const HOROSCOPES = [
     "Don't be shy today, make the first move! 🚀",
     "Your charm is irresistible today. Use it wisely! 😉",
     "Someone with a great smile is waiting for you. 😊",
-    "Good vibes only! Your energy attracts love. ⚡"
+    "Good vibes only! Your energy attracts love. ⚡",
+    "Unexpected news will bring you joy today. 📩",
+    "Wear Red today for good luck in love! ❤️"
 ];
 
 export const PICKUP_LINES = [
@@ -56,7 +59,22 @@ export const PICKUP_LINES = [
     "Are you from Kathmandu? Because you are the capital of my heart. 🇳🇵",
     "Do you believe in love at first sight, or should I walk by again?",
     "If you were a vegetable, you'd be a 'Cute-cumber'. 🥒",
-    "Is your name Google? Because you have everything I've been searching for."
+    "Is your name Google? Because you have everything I've been searching for.",
+    "Timro haat ma k ho? Mero haat huna parne. 🤝",
+    "Gham lagyo ghamailo, timi vayesi ramailo. ☀️",
+    "Timi lai dekhay pachi malai diabetes hola jasto cha, kina ki timi ekdam sweet chau. 🍬",
+    "Are you a loan? Because you have my interest! 💰",
+    "Do you have a Band-Aid? I just scraped my knee falling for you. 🤕",
+    "Timi bina ko jindagi, nun bina ko tarkari jastai ho. 🍛",
+    "K timi jadugar hau? Timilai dekhne bittikai sabai kura gayab huncha. ✨",
+    "Timro muskan ma jadu cha, herda herdai haraye ma. 😍",
+    "Juni juni lai sath dine gari aayeko chu. 💑",
+    "Timi lai dekhda ta jun pani lajayera badal vitra lukcha. 🌙",
+    "Sunchu Nepal ma sundarta ko kami chaina, tara timi jasto kohi chaina. 🇳🇵",
+    "Are you from Chitwan? Because you're wild! 🦏",
+    "Timi mero mutu ko dhadkan hau. 💓",
+    "Can I follow you home? Cause my parents always told me to follow my dreams. 🏡",
+    "Timro haaso ma ma dubna chahanchu. 🌊"
 ];
 
 export const DATE_IDEAS = [
@@ -69,7 +87,11 @@ export const DATE_IDEAS = [
     "Street food tour in Mangalbazar 🍡",
     "Sunset view from Swayambhu 🌅",
     "Coffee date at Himalayan Java 🥯",
-    "Bike ride to Nagarkot 🏍️"
+    "Bike ride to Nagarkot 🏍️",
+    "Visit the Narayanhiti Palace Museum 🏰",
+    "Picnic at Godawari Botanical Garden 🌸",
+    "Rickshaw ride in Thamel 🛺",
+    "Sweet Lassi at Indrachowk 🥛"
 ];
 
 export const ICEBREAKERS = [
@@ -114,7 +136,8 @@ export const QUICK_REPLIES = [
     "Good Night 🌙",
     "Lol 😂",
     "Tapai ko ghar kata ho?",
-    "Ani k cha?"
+    "Ani k cha?",
+    "La hai ta 👋"
 ];
 
 export const PROFANITY_LIST = ['badword1', 'badword2', 'hell', 'stupid', 'idiot']; 
@@ -132,7 +155,22 @@ export const GAME_TRUTH = [
     "🎮 TRUTH: What is your guilty pleasure song?",
     "🎮 TRUTH: Do you believe in ghosts?",
     "🎮 TRUTH: What is the most romantic thing you've ever done?",
-    "🎮 TRUTH: When was the last time you cried and why?"
+    "🎮 TRUTH: When was the last time you cried and why?",
+    "🎮 TRUTH: What is the most childish thing you still do?",
+    "🎮 TRUTH: Have you ever stalked someone on social media?",
+    "🎮 TRUTH: What is your worst habit?",
+    "🎮 TRUTH: What is the last lie you told?",
+    "🎮 TRUTH: Who is your favorite family member?",
+    "🎮 TRUTH: Have you ever peed in a swimming pool?",
+    "🎮 TRUTH: What is your biggest regret?",
+    "🎮 TRUTH: Have you ever sent a text to the wrong person?",
+    "🎮 TRUTH: What's the weirdest dream you've ever had?",
+    "🎮 TRUTH: Have you ever ghosted someone?",
+    "🎮 TRUTH: What is the most expensive thing you've ever stolen?",
+    "🎮 TRUTH: Who in this chat would you date if you had to?",
+    "🎮 TRUTH: What is your biggest insecurity?",
+    "🎮 TRUTH: What's the worst haircut you've ever had?",
+    "🎮 TRUTH: Have you ever practiced kissing on your hand?"
 ];
 
 export const GAME_DARE = [
@@ -144,7 +182,19 @@ export const GAME_DARE = [
     "🔥 DARE: Describe your dream date using only emojis.",
     "🔥 DARE: Send a voice note singing your favorite Nepali song (if you can!).",
     "🔥 DARE: Change your profile bio to 'I love Momo' for 5 minutes.",
-    "🔥 DARE: Tell me a joke. If I don't laugh, you have to answer a Truth."
+    "🔥 DARE: Tell me a joke. If I don't laugh, you have to answer a Truth.",
+    "🔥 DARE: Send a voice note humming a song.",
+    "🔥 DARE: Send a screenshot of your home screen.",
+    "🔥 DARE: Talk without using the letter 'e' for the next 3 messages.",
+    "🔥 DARE: Send the last photo you took.",
+    "🔥 DARE: Send a voice note yelling your name.",
+    "🔥 DARE: Do 20 squats and send a video (or count out loud in voice note).",
+    "🔥 DARE: Speak in a high-pitched voice for the next 3 voice notes.",
+    "🔥 DARE: Change your profile picture to a monkey/animal for 10 minutes.",
+    "🔥 DARE: Let me choose your next message to your best friend.",
+    "🔥 DARE: Send a photo of your fridge contents.",
+    "🔥 DARE: Type with your elbows for the next message.",
+    "🔥 DARE: Spin around 10 times and try to walk straight (video evidence needed!)."
 ];
 
 export const GAME_RATHER = [
@@ -156,7 +206,17 @@ export const GAME_RATHER = [
     "🤔 RATHER: Be invisible OR be able to fly?",
     "🤔 RATHER: Live in the mountains OR live by the beach?",
     "🤔 RATHER: Be famous on TikTok OR be the smartest person in the room?",
-    "🤔 RATHER: Forget your past OR forget everyone you know?"
+    "🤔 RATHER: Forget your past OR forget everyone you know?",
+    "🤔 RATHER: Always have wet socks OR always have a rock in your shoe?",
+    "🤔 RATHER: Be able to talk to animals OR speak every language?",
+    "🤔 RATHER: Only eat Momo for the rest of your life OR only eat Pizza?",
+    "🤔 RATHER: Always be 10 minutes late OR always be 20 minutes early?",
+    "🤔 RATHER: Would you rather lose all your money or all your memories?",
+    "🤔 RATHER: Would you rather be reborn in the past or the future?",
+    "🤔 RATHER: Would you rather have a pause button or a rewind button for your life?",
+    "🤔 RATHER: Would you rather fight 1 horse-sized duck or 100 duck-sized horses?",
+    "🤔 RATHER: Would you rather find true love or win the lottery?",
+    "🤔 RATHER: Would you rather date someone with bad breath or bad fashion?"
 ];
 
 export const SQL_SETUP_SCRIPT = `
@@ -213,8 +273,11 @@ create table if not exists public.announcements (
   created_at bigint
 );
 
--- 2. MIGRATION: Add 'interests' column if missing
+-- 2. MIGRATIONS
+-- Add 'interests' column if missing
 alter table public.profiles add column if not exists interests text[] default '{}';
+-- Add 'favorites' column if missing
+alter table public.profiles add column if not exists favorites text[] default '{}';
 
 -- 3. Enable Realtime (Safe Block)
 DO $$
