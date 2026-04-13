@@ -278,6 +278,8 @@ create table if not exists public.announcements (
 alter table public.profiles add column if not exists interests text[] default '{}';
 -- Add 'favorites' column if missing
 alter table public.profiles add column if not exists favorites text[] default '{}';
+-- Add 'fcm_token' column if missing
+alter table public.profiles add column if not exists fcm_token text;
 
 -- 3. Enable Realtime (Safe Block)
 DO $$

@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://wixaqtfpeoqjbujszphc.supabase.co';
-// The key provided was missing the JWT header (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9). 
-// I have reconstructed the full key below.
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpeGFxdGZwZW9xamJ1anN6cGhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MDQyNDQsImV4cCI6MjA3OTk4MDI0NH0.1f1R07mP9lwHIigR4LRFU6ltOzy8KbifFefEZVbztrc';
+// Use environment variables if present, otherwise use placeholders to prevent crash
+// The app will detect the invalid configuration and show the Setup screen.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cfznrbtzpkyscyxiasjq.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
